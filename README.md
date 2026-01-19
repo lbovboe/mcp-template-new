@@ -251,25 +251,84 @@ This template has been updated to use the new **Streamable HTTP transport** inst
 
 ## Project Structure
 
+This project follows a modular architecture for better maintainability and scalability:
+
 ```
 mcp-template/
 ├── src/
-│   └── index.ts          # Main server code
-├── build/                # Compiled JavaScript (after build)
+│   ├── index.ts              # Main entry point
+│   ├── config/               # Configuration
+│   │   └── index.ts         # Server config and argument parsing
+│   ├── types/               # TypeScript type definitions
+│   │   └── index.ts         # Shared types
+│   ├── schemas/             # Zod validation schemas
+│   │   └── tool-schemas.ts  # Tool input validation
+│   ├── tools/               # Tool implementations
+│   │   ├── index.ts         # Tool registry and exports
+│   │   ├── get-time.ts      # Get time tool
+│   │   └── echo.ts          # Echo tool
+│   ├── resources/           # Resource implementations
+│   │   ├── index.ts         # Resource registry
+│   │   └── info.ts          # Server info resource
+│   ├── server/              # MCP server setup
+│   │   └── mcp-server.ts    # Server creation and handlers
+│   └── transports/          # Transport layer
+│       ├── stdio.ts         # Standard I/O transport
+│       └── http.ts          # HTTP/SSE transport
+├── build/                    # Compiled JavaScript (after build)
 ├── package.json
 ├── tsconfig.json
-└── README.md
+├── README.md
+└── ARCHITECTURE.md           # Detailed architecture documentation
 ```
 
 ## Customization
 
-To add your own tools and resources:
+### Adding a New Tool
 
-1. Define tool schemas using Zod in `src/index.ts`
-2. Add tool definitions in the `ListToolsRequestSchema` handler
-3. Implement tool logic in the `CallToolRequestSchema` handler
-4. Add resources in the `ListResourcesRequestSchema` handler
-5. Implement resource reads in the `ReadResourceRequestSchema` handler
+1. **Create schema** in `src/schemas/tool-schemas.ts`:
+```typescript
+export const MyToolSchema = z.object({
+  param: z.string().describe("Parameter description"),
+});
+```
+
+2. **Create tool** in `src/tools/my-tool.ts`:
+```typescript
+import { Tool } from "./index.js";
+import { MyToolSchema } from "../schemas/tool-schemas.js";
+
+export const myTool: Tool = {
+  name: "my_tool",
+  description: "Tool description",
+  inputSchema: { /* ... */ },
+  handler: async (args: any) => {
+    const parsed = MyToolSchema.safeParse(args);
+    // ... implement logic
+    return { content: [{ type: "text", text: result }] };
+  },
+};
+```
+
+3. **Export** in `src/tools/index.ts`:
+```typescript
+export { myTool } from "./my-tool.js";
+```
+
+4. **Register** in `src/index.ts`:
+```typescript
+const server = createMCPServer(
+  serverConfig,
+  [getTimeTool, echoTool, myTool], // Add here
+  [infoResource]
+);
+```
+
+### Adding a New Resource
+
+Follow the same pattern as tools but in the `src/resources/` directory.
+
+For detailed architecture information and extension patterns, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## License
 
