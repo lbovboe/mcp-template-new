@@ -115,7 +115,7 @@ curl http://localhost:3001/health
 
 3. Initialize a session (first request must be initialize):
 ```bash
-curl -X POST http://localhost:3001/mcp \
+curl -i -X POST http://localhost:3001/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{
@@ -133,16 +133,31 @@ curl -X POST http://localhost:3001/mcp \
   }'
 ```
 
-**Important:** The `Accept` header must include both `application/json` and `text/event-stream` to properly support the Streamable HTTP protocol.
+**Important Notes:**
+- The `-i` flag shows response headers (where the session ID is located)
+- The `Accept` header must include both `application/json` and `text/event-stream` to properly support the Streamable HTTP protocol
+- Look for the `mcp-session-id` header in the response (e.g., `mcp-session-id: e75aa1e2-8327-47fe-b670-a49f6a694e64`)
+- Copy this session ID to use in subsequent requests
 
-Note the `Mcp-Session-Id` header in the response. Use it for subsequent requests.
-
-4. List tools (using the session ID from step 3):
+4. List tools (replace `<session-id>` with the value from step 3):
 ```bash
-curl -X POST http://localhost:3001/mcp \
+curl -i -X POST http://localhost:3001/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
-  -H "Mcp-Session-Id: <session-id-from-step-3>" \
+  -H "Mcp-Session-Id: <session-id>" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list"
+  }'
+```
+
+Example with actual session ID:
+```bash
+curl -i -X POST http://localhost:3001/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Session-Id: e75aa1e2-8327-47fe-b670-a49f6a694e64" \
   -d '{
     "jsonrpc": "2.0",
     "id": 2,
