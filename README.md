@@ -251,7 +251,9 @@ This template has been updated to use the new **Streamable HTTP transport** inst
 
 ## Project Structure
 
-This project follows a modular architecture for better maintainability and scalability:
+This project follows a modular architecture for better maintainability and scalability.
+
+> **Note**: The original monolithic version (before refactoring) is preserved in `reference/index.ts` for reference.
 
 ```
 mcp-template/
