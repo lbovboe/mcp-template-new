@@ -114,6 +114,8 @@ curl http://localhost:3001/health
 ```
 
 3. Initialize a session (first request must be initialize):
+
+**Option A: Using `-i` flag (includes headers, cleaner output):**
 ```bash
 curl -i -X POST http://localhost:3001/mcp \
   -H "Content-Type: application/json" \
@@ -133,8 +135,29 @@ curl -i -X POST http://localhost:3001/mcp \
   }'
 ```
 
+**Option B: Using `-v` flag (verbose, shows full request and response):**
+```bash
+curl -v -X POST http://localhost:3001/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2024-11-05",
+      "capabilities": {},
+      "clientInfo": {
+        "name": "test-client",
+        "version": "1.0.0"
+      }
+    }
+  }'
+```
+
 **Important Notes:**
-- The `-i` flag shows response headers (where the session ID is located)
+- The `-i` flag shows response headers only (cleaner)
+- The `-v` flag shows both request and response headers (verbose, for debugging)
 - The `Accept` header must include both `application/json` and `text/event-stream` to properly support the Streamable HTTP protocol
 - Look for the `mcp-session-id` header in the response (e.g., `mcp-session-id: e75aa1e2-8327-47fe-b670-a49f6a694e64`)
 - Copy this session ID to use in subsequent requests
