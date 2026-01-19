@@ -8,7 +8,7 @@ A Model Context Protocol (MCP) server template built with Node.js and TypeScript
   - `get_time`: Get current time in any timezone
   - `echo`: Echo back messages
 - **Resources**: Server information resource
-- **Dual Transport**: Supports both stdio and SSE (Server-Sent Events)
+- **Dual Transport**: Supports both stdio and Streamable HTTP (single `/mcp` endpoint)
 
 ## Installation
 
@@ -28,30 +28,30 @@ npm run build
 
 **Stdio mode** (for MCP clients like Claude Desktop):
 ```bash
-npm run dev
+npm run dev:mcp
 ```
 
-**SSE mode** (for HTTP-based clients):
+**HTTP mode** (for HTTP-based clients, using Streamable HTTP transport):
 ```bash
-npm run dev:sse
+npm run dev:mcp:http
 # Server runs on http://localhost:3001
 
 # Custom port:
-npm run dev:sse:port 3002
+npm run dev:mcp:http:port 3002
 ```
 
 ### Production Mode
 
 **Stdio mode**:
 ```bash
-npm start
+npm run start:mcp
 ```
 
-**SSE mode**:
+**HTTP mode**:
 ```bash
-npm start -- --sse
+npm run start:mcp:http
 # Or with custom port:
-npm start -- --sse --port 3002
+npm run start:mcp:http:port 3002
 ```
 
 ## Configuration for Claude Desktop
@@ -84,11 +84,28 @@ Or use tsx for development:
 }
 ```
 
-## Testing with SSE Mode
+## Testing with HTTP Mode (Streamable HTTP)
+
+The new Streamable HTTP transport uses a **single `/mcp` endpoint** for all communication (POST, GET, DELETE methods).
+
+### Key Differences from Old SSE Transport
+
+**Old (Deprecated) SSE Transport:**
+- Two endpoints: `/sse` (GET for streaming) and `/message` (POST for requests)
+- Session ID passed as query parameter
+
+**New Streamable HTTP Transport:**
+- Single endpoint: `/mcp` 
+- POST /mcp: Client sends requests
+- GET /mcp: Client establishes SSE streaming for server-initiated notifications
+- DELETE /mcp: Client terminates session
+- Session ID passed in `Mcp-Session-Id` header
+
+### Testing Steps
 
 1. Start the server:
 ```bash
-npm run dev:sse
+npm run dev:mcp:http
 ```
 
 2. Test the health endpoint:
@@ -96,21 +113,103 @@ npm run dev:sse
 curl http://localhost:3001/health
 ```
 
-3. Connect via SSE:
+3. Initialize a session (first request must be initialize):
 ```bash
-curl http://localhost:3001/sse
-```
-
-4. Send messages (in another terminal, use the sessionId from the SSE connection):
-```bash
-curl -X POST "http://localhost:3001/message?sessionId=<session-id>" \
+curl -X POST http://localhost:3001/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{
     "jsonrpc": "2.0",
     "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2024-11-05",
+      "capabilities": {},
+      "clientInfo": {
+        "name": "test-client",
+        "version": "1.0.0"
+      }
+    }
+  }'
+```
+
+**Important:** The `Accept` header must include both `application/json` and `text/event-stream` to properly support the Streamable HTTP protocol.
+
+Note the `Mcp-Session-Id` header in the response. Use it for subsequent requests.
+
+4. List tools (using the session ID from step 3):
+```bash
+curl -X POST http://localhost:3001/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Session-Id: <session-id-from-step-3>" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
     "method": "tools/list"
   }'
 ```
+
+5. Call a tool:
+```bash
+curl -X POST http://localhost:3001/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Session-Id: <session-id>" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "echo",
+      "arguments": {
+        "message": "Hello from Streamable HTTP!"
+      }
+    }
+  }'
+```
+
+6. Establish SSE streaming (optional, for server-initiated notifications):
+```bash
+curl -X GET http://localhost:3001/mcp \
+  -H "Mcp-Session-Id: <session-id>" \
+  -H "Accept: text/event-stream"
+```
+
+7. Terminate session:
+```bash
+curl -X DELETE http://localhost:3001/mcp \
+  -H "Mcp-Session-Id: <session-id>"
+```
+
+## Migration from SSE Transport
+
+This template has been updated to use the new **Streamable HTTP transport** instead of the deprecated `SSEServerTransport`.
+
+### What Changed?
+
+**Before (Deprecated SSE Transport):**
+- Used `SSEServerTransport` from `@modelcontextprotocol/sdk/server/sse.js`
+- Required two endpoints:
+  - `GET /sse` - for server-to-client streaming
+  - `POST /message?sessionId=<id>` - for client-to-server messages
+- Session ID passed as query parameter
+
+**After (New Streamable HTTP Transport):**
+- Uses `StreamableHTTPServerTransport` from `@modelcontextprotocol/sdk/server/streamableHttp.js`
+- Single endpoint `/mcp` with three HTTP methods:
+  - `POST /mcp` - for all client-to-server messages
+  - `GET /mcp` - for server-to-client SSE streaming (optional)
+  - `DELETE /mcp` - for session termination
+- Session ID passed in `Mcp-Session-Id` header
+- Requires `Accept: application/json, text/event-stream` header
+
+### Benefits of Streamable HTTP
+
+1. **Simplified Architecture**: Single endpoint instead of two
+2. **Better Scalability**: Easier to load balance and manage
+3. **Standards Compliance**: Follows HTTP best practices
+4. **Future-Proof**: The new MCP specification standard (as of 2025-03-26)
 
 ## Project Structure
 
