@@ -1,0 +1,36 @@
+{
+  "name": "mcp-template",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "mcp-template": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start:mcp": "node build/index.js",
+    "start:mcp:sse": "node build/index.js --sse",
+    "start:mcp:sse:port": "node build/index.js --sse --port",
+    "dev:mcp": "tsx src/index.ts",
+    "dev:mcp:sse": "tsx src/index.ts --sse",
+    "dev:mcp:sse:port": "tsx src/index.ts --sse --port",
+    "inspect": "npx @modelcontextprotocol/inspector npm run start:mcp --silent",
+    "inspect:built": "npx @modelcontextprotocol/inspector node build/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["mcp", "model-context-protocol"],
+  "author": "",
+  "license": "ISC",
+  "description": "MCP Server Template",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "express": "^5.2.1",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.9",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
