@@ -15,6 +15,7 @@
     "dev:mcp:http": "tsx src/index.ts --http",
     "dev:mcp:http:port": "tsx src/index.ts --http --port",
     "inspect": "npx @modelcontextprotocol/inspector npm run start:mcp --silent",
+    "inspect:http": "npx @modelcontextprotocol/inspector",
     "inspect:built": "npx @modelcontextprotocol/inspector node build/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
